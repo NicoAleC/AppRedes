@@ -6,6 +6,7 @@
 
 #define TRUE 1;
 #define FALSE 0;
+#define ERROR -1;
 
 unsigned int ReadDir(char dirccion[]);
 int esNumero(char numero[]);
@@ -32,12 +33,17 @@ unsigned int Readdir(char direccion[]){
 int esNumero(char numero[]){
 	int n = atoi(numero);
 	fprintf(stderr, "numero transformado: %d\n", n);
-	
+	int verificado;
 	for(int i = 0; i < strlen(numero);i++){
 		if(!isdigit(numero[i])){
-			return FALSE;
+			verificado = 0;
 		}
 	}
 
-	return TRUE;
+	if(verificado){
+		return n;
+	} else {
+		return ERROR;
+	}
+
 }
