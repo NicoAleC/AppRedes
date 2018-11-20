@@ -4,19 +4,19 @@
 #include <ctype.h>
 #include <errno.h>
 
-unsigned int dirToInt(char dirccion[]);
-int validarPunto(char direccion[]);
-int validarNumero(char numero[]);
+#define TRUE 1;
+#define FALSE 0;
+
+unsigned int ReadDir(char dirccion[]);
+int esNumero(char numero[]);
 
 int main(void) {
 
-	char ip_entrada[20];
+	char ip_entrada[15];
 	fprintf(stderr, "ingresar una ip: \n");
 	scanf("%s", ip_entrada);
 
-	dirToInt(ip_entrada);
-
-	unsigned int ip = validarPunto(ip_entrada);
+	unsigned int ip = esNumero(ip_entrada);
 
 
 
@@ -25,38 +25,19 @@ int main(void) {
    return 0;
 }
 
-unsigned int dirToInt(char direccion[]){
-
-	unsigned int aux = 0x00000000, contador;
-
-
+unsigned int Readdir(char direccion[]){
 
 }
 
-int validarPunto(char direccion[]){
-	direccion = strchr(direccion, '.');
-	int contador = 0;
-	while (direccion != NULL){
-		direccion = strchr(direccion + 1, '.');
-		contador++;
-	}
-	printf("puntos contados %d\n", contador);
-	if(contador == 3){
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-int validarNumero(char numero[]){
-	int contador = 0;
-	while(contador != strlen(numero)){
-		if(!isdigit(numero[contador])){
-			return 0;
+int esNumero(char numero[]){
+	int n = atoi(numero);
+	fprintf(stderr, "numero transformado: %d\n", n);
+	
+	for(int i = 0; i < strlen(numero);i++){
+		if(!isdigit(numero[i])){
+			return FALSE;
 		}
-		contador ++;
 	}
 
-	return 1;
-
+	return TRUE;
 }
