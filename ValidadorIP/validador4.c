@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,8 @@ int contarPuntos(char direccion[]);
 int ipClass(unsigned int ip);
 int verifClass(unsigned int direccion, int mascara);
 int gatewayValido(unsigned int ip, unsigned int mascara,unsigned int gateway);
+void showDir(unsigned int direccion);
+double pow(double x, double y);
 
 int main(void) {
 
@@ -32,44 +35,43 @@ int main(void) {
 	unsigned int ip = readDir(ip_entrada);
 	unsigned int mask = verifMask(mascara);
 	unsigned int gtwy= readDir(gateway_entrada);
-	ipClass (ip);
+	//ipClass (ip);
 	gatewayValido(ip,mask,gtwy);
 
-	fprintf(stderr, "esta es la ip ingresada (%s) y esta es la transformada (%u) \n", ip_entrada, ip);
-	fprintf(stderr, "verifMask: (%u)\n", mask);
+	//fprintf(stderr, "esta es la ip ingresada (%s) y esta es la transformada (%u) \n", ip_entrada, ip);
+	//fprintf(stderr, "verifMask: (%u)\n", mask);
 	verifClass(ip, mascara);
+	printf("NetID:\n");
+	showDir(ip&mask);
+	printf("HostID:\n");
+	showDir(ip);
+	fprintf(stderr, "Cantidad de HostID que pueden existir en la red: %d\n", (int) ((pow((2) , (32-mascara))) - 2));
 
-   return 0;
+   	return 0;
 }
 
 unsigned int readDir(char direccion[]){
 
-	unsigned int aux1 = 0, aux2 = 0, aux3 = 0, aux4 = 0;
+	unsigned int aux1 = 300, aux2 = 300, aux3 = 300, aux4 = 300;
 
 	//fprintf(stderr, "longitud de IP : %ld y la validacion: %ld\n", strlen(direccion), strspn(direccion, "0123456789."));
 
 	if(strlen(direccion) <= 16 && strspn(direccion, "0123456789.") == strlen(direccion) && contarPuntos(direccion)){
 		sscanf(direccion, "%u.%u.%u.%u", &aux1, &aux2, &aux3, &aux4);
 	} else {
+		errno = EBADMSG;
 		perror("La direccion escrita es más larga de lo que debería, incluye caracteres no numéricos o está incompleta");
 		exit(0);
 		return FALSE;
 	}
 
 	if((aux1|aux2|aux3|aux4) > 255){
-		perror("los valores están fuera de rango");
+		errno = EBADMSG;
+		perror("los valores están fuera de rango o vacíos");
 		exit(0);
 	}
 
-	fprintf(stderr, "la direccion verificada: %u.%u.%u.%u\n", aux1, aux2, aux3, aux4);
-	/*
-	fprintf(stderr, "%u\n", (0|aux1));
-	fprintf(stderr, "%u\n", (0|aux1)<<8);
-	fprintf(stderr, "%u\n", ((0|aux1)<<8)|aux2);
-	fprintf(stderr, "%u\n", (((0|aux1)<<8)|aux2)<<8);
-	fprintf(stderr, "%u\n", ((((0|aux1)<<8)|aux2)<<8)|aux3);
-	fprintf(stderr, "%u\n", (((((0|aux1)<<8)|aux2)<<8)|aux3)<<8);
-	fprintf(stderr, "%u\n", ((((((0|aux1)<<8)|aux2)<<8)|aux3)<<8)|aux4);*/
+	//fprintf(stderr, "la direccion verificada: %u.%u.%u.%u\n", aux1, aux2, aux3, aux4);
 
 	return ((((((0|aux1) << 8)|aux2) << 8)|aux3) << 8)|aux4;
 }
@@ -135,21 +137,27 @@ int verifClass(unsigned int ip, int mascara){
 	ip2 = (ip >> 8)&0xff;
 	ip1 = ip&0xff;
 	if(ip4 <= 127 && mascara < 8){
+		ipClass(ip);
 		printf("El direccionamiento es CIDR\n");
 	} else if(ip4 <= 191 && ip4 >= 128 && mascara < 16){
+		ipClass(ip);
 		printf("El direccionamiento es CIDR\n");
 	} else if(ip4 <= 223 && ip4 >= 192 && mascara < 24){
+		ipClass(ip);
 		printf("El direccionamiento es CIDR\n");
 	} else if(ip4 <= 127 && mascara > 8){
+		ipClass(ip);
 		printf("El direccionamiento es SubNetting\n");
 	} else if(ip4 <= 191 && ip4 >= 128 && mascara > 16){
+		ipClass(ip);
 		printf("El direccionamiento es SubNetting\n");
 	} else if(ip4 <= 223 && ip4 >= 192 && mascara > 24){
+		ipClass(ip);
 		printf("El direccionamiento es SubNetting\n");
 	} else{
 		ipClass(ip);
 	}
-	fprintf(stderr, "verifClass: %u.%u.%u.%u/%d\n", ip4, ip3, ip2, ip1, mascara);
+	//fprintf(stderr, "verifClass: %u.%u.%u.%u/%d\n", ip4, ip3, ip2, ip1, mascara);
 	return TRUE;
 }
 
@@ -157,11 +165,22 @@ int gatewayValido(unsigned int ip,unsigned int mascara,unsigned int gateway)
 {
     //fprintf(stderr, "ip: %u y gw: %u", ip&mascara, gateway);
     if ((ip&mascara) == (gateway&mascara)){
-        printf("Gateway Valido\n");
+        //printf("Gateway Valido\n");
         return TRUE;
     }else{
-        printf("Gateway invalido\n");
+        //printf("Gateway invalido\n");
+        errno = EBADMSG;
+        perror("la direccion de gateway no pertenece a la red");
         return FALSE;
     }
        
+}
+
+void showDir(unsigned int dir){
+	unsigned int ip4,ip3,ip2,ip1;
+	ip4 = dir >> 24;
+	ip3 = (dir >> 16)&0xff;
+	ip2 = (dir >> 8)&0xff;
+	ip1 = dir&0xff;
+	fprintf(stderr, "%u.%u.%u.%u\n", ip4, ip3, ip2, ip1);
 }
