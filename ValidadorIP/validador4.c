@@ -1,4 +1,4 @@
-#include <stdio.h>
+##include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -11,18 +11,28 @@
 unsigned int readDir(char direccion[]);
 unsigned int verifMask(int mascara);
 int contarPuntos(char direccion[]);
+void ipClass(unsigned int ip);
+void gatewayValido(unsigned int ip, unsigned int mascara,unsigned int gateway);
 
 int main(void) {
 
 	char ip_entrada[16];
 	int mascara;
+	char gateway_entrada[16];
+	
 	printf("ingresar una ip: \n");
 	scanf("%s", ip_entrada);
 	printf("ingresar la máscara de subred en notación \"/24\"\n");
 	scanf("%d", &mascara);
+	
+	printf("ingresar el gateway: \n");
+	scanf("%s", gateway_entrada);
 
 	unsigned int ip = readDir(ip_entrada);
 	unsigned int mask = verifMask(mascara);
+	unsigned int gtwy= readDir(gateway_entrada);
+	ipClass (ip);
+	gatewayValido(ip,mask,gtwy);
 
 	fprintf(stderr, "esta es la ip ingresada (%s) y esta es la transformada (%u) \n", ip_entrada, ip);
 	fprintf(stderr, "verifMask: (%u)\n", mask);
@@ -91,4 +101,33 @@ int contarPuntos(char in[]){
    }else {
       return 0;
    }
+}
+
+void ipClass(unsigned int ip)
+{
+    if ((ip & 0x80000000)==0){
+        puts("Clase A");
+    } else if((ip & 0xC0000000)==0x80000000)
+    {
+        puts("Clase B");
+    }else if((ip & 0xE0000000)==0xC0000000)
+    {
+        puts("Clase C");
+    }else if((ip & 0xE1000000)==0xE0000000)
+    {
+        puts("Clase D");
+    }
+    else{
+        puts("Clase E");
+    }
+}
+void gatewayValido(unsigned int ip,unsigned int mascara,unsigned int gateway)
+{
+    //fprintf(stderr, "ip: %u y gw: %u", ip&mascara, gateway);
+    if ((ip&mascara) == (gateway&mascara)){
+        puts("Gateway Valido");
+    }else{
+        puts("Gateway invalido");
+    }
+       
 }
