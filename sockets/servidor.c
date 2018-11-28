@@ -4,6 +4,11 @@
 #include <stdlib.h> 
 #include <netinet/in.h> 
 #include <string.h> 
+
+#include "Nodo.h"
+#include "Cola.h"
+#include "Cola.c"
+
 #define PORT 8080 
 int main(int argc, char const *argv[]) 
 { 
