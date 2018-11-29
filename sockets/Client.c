@@ -7,9 +7,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
-
+	
 #define TAMANO 1024
-
+		
 void enviarrecibir(int i, int sockfd);
 void solicitarconexion(int *sockfd, struct sockaddr_in *server_addr);
 int main()
@@ -18,21 +18,21 @@ int main()
 	struct sockaddr_in server_addr;
 	fd_set master;
 	fd_set read_fds;
-
+	
 	solicitarconexion(&sockfd, &server_addr);
 	FD_ZERO(&master);
         FD_ZERO(&read_fds);
         FD_SET(0, &master);
         FD_SET(sockfd, &master);
 	fdmax = sockfd;
-
+	
 	while(1){
 		read_fds = master;
 		if(select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1){
 			perror("select");
 			exit(4);
 		}
-
+		
 		for(i=0; i <= fdmax; i++ )
 			if(FD_ISSET(i, &read_fds))
 				enviarrecibir(i, sockfd);
@@ -47,7 +47,7 @@ void enviarrecibir(int i, int sockfd)
 	char send_buf[TAMANO];
 	char recv_buf[TAMANO];
 	int nbyte_recvd;
-
+	
 	if (i == 0){
 		fgets(send_buf, TAMANO, stdin);
 		if (strcmp(send_buf , "quit\n") == 0) {
@@ -61,8 +61,8 @@ void enviarrecibir(int i, int sockfd)
 		fflush(stdout);
 	}
 }
-
-
+		
+		
 void solicitarconexion(int *sockfd, struct sockaddr_in *server_addr)
 {
 	if ((*sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -73,7 +73,7 @@ void solicitarconexion(int *sockfd, struct sockaddr_in *server_addr)
 	server_addr->sin_port = htons(4950);
 	server_addr->sin_addr.s_addr = inet_addr("127.0.0.1");
 	memset(server_addr->sin_zero,0, sizeof server_addr->sin_zero);
-
+	
 	if(connect(*sockfd, (struct sockaddr *)server_addr, sizeof(struct sockaddr)) == -1) {
 		perror("connect");
 		exit(1);

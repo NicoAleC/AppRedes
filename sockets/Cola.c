@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "Nodo.h"
+#include "Nodo.c"
 #include "Cola.h"
 
 #define TRUE 1
