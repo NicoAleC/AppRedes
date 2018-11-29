@@ -6,6 +6,7 @@
 #include <string.h> 
 
 #include "Nodo.h"
+#include "Nodo.c"
 #include "Cola.h"
 #include "Cola.c"
 
