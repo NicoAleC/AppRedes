@@ -3,3 +3,5 @@ typedef struct Nodo{
 	char *mensaje;
 	struct Nodo *siguiente;
 } Nodo;
+
+Nodo *nuevoNodo(int id, char *mensaje);
