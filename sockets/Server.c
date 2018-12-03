@@ -13,8 +13,8 @@
 #define PORT 4950
 #define TAMANO 1024
 
-void enviaratodos(int j, int i, int sockfd, int nbytes_recvd, char *recv_buf, fd_set *master);
-void enviarrecibir(int i, fd_set *master, int sockfd, int fdmax);
+void enviaratodos(int j, int i, int sockfd, int nbytes_recvd, fd_set *master, Cola * mensajes);
+void recibir_responder(int i, fd_set *master, int sockfd, int fdmax, Cola*);
 void conexionaceptada(fd_set *master, int *fdmax, int sockfd, struct sockaddr_in *client_addr);
 void solicitarconexion(int *sockfd, struct sockaddr_in *server_addr);
 
@@ -28,6 +28,7 @@ int main()
 	
 	FD_ZERO(&master);
 	FD_ZERO(&read_fds);
+	Cola *mensajes = nuevaCola();
 	solicitarconexion(&sockfd, &server_addr);
 	FD_SET(sockfd, &master);
 	
@@ -40,29 +41,31 @@ int main()
 		}
 		
 		for (i = 0; i <= fdmax; i++){
+			fprintf(stderr, "fdmax = %d\n", fdmax);
 			if (FD_ISSET(i, &read_fds)){
 				if (i == sockfd)
 					conexionaceptada(&master, &fdmax, sockfd, &client_addr);
 				else
-					enviarrecibir(i, &master, sockfd, fdmax);
+					recibir_responder(i, &master, sockfd, fdmax, mensajes);
 			}
 		}
 	}
 	return 0;
 }
 
-void enviaratodos(int j, int i, int sockfd, int nbytes_recvd, char *recv_buf, fd_set *master)
+void enviaratodos(int j, int i, int sockfd, int nbytes_recvd, fd_set *master, Cola* mensajes)
 {
 	if (FD_ISSET(j, master)){
 		if (j != sockfd && j != i) {
-			if (send(j, recv_buf, nbytes_recvd, 0) == -1) {
+			Nodo *respuesta = tomar(mensajes);
+			if (send(j, respuesta->mensaje, nbytes_recvd, 0) == -1) {
 				perror("error al enviar");
 			}
 		}
 	}
 }
 		
-void enviarrecibir(int i, fd_set *master, int sockfd, int fdmax)
+void recibir_responder(int i, fd_set *master, int sockfd, int fdmax, Cola *mensajes)
 {
 	int nbytes_recvd, j;
 	char recv_buf[TAMANO], buf[TAMANO];
@@ -77,7 +80,9 @@ void enviarrecibir(int i, fd_set *master, int sockfd, int fdmax)
 		//FD_CLR(i, master);
 	}else { 
 		for(j = 0; j <= fdmax; j++){
-			enviaratodos(j, i, sockfd, nbytes_recvd, recv_buf, master );
+			Nodo * mensaje = nuevoNodo(recv_buf);
+			agregar(mensaje, mensajes);
+			enviaratodos(j, i, sockfd, nbytes_recvd, master , mensajes);
 		}
 	}	
 }
@@ -130,5 +135,6 @@ void solicitarconexion(int *sockfd, struct sockaddr_in *server_addr)
 	}
 
 	printf("\nEsperando que los clientes se conecten\n");
+	
 	fflush(stdout);
 }

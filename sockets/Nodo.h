@@ -4,4 +4,4 @@ typedef struct Nodo{
 	struct Nodo *siguiente;
 } Nodo;
 
-Nodo *nuevoNodo(int id, char *mensaje);
+Nodo *nuevoNodo(char *mensaje);
