@@ -1,6 +1,7 @@
 typedef struct Cola{
 	Nodo *primero;
 	Nodo *ultimo;
+	int largo;
 } Cola;
 
 int agregar(Nodo * ,Cola *);

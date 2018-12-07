@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "Nodo.h"
+#include "Nodo.c"
 #include "Cola.h"
 
 #define TRUE 1
@@ -50,15 +50,23 @@ int agregar(Nodo *nuevo,Cola *cola){
 	}
 
 	if(cola->primero == NULL){
+		nuevo->id = 1;
 		cola->primero = nuevo;
 		cola->ultimo = nuevo;
+		cola->largo = 1;
 		nuevo->siguiente = NULL;
+		fprintf(stderr, "Elemento agregado a la cola vacía (%s, %d) largo: %d\n", cola->ultimo->mensaje, cola->ultimo->id, cola->largo);
 	} else {
-		cola->ultimo->siguiente = nuevo;
-		cola->ultimo = nuevo;
+		if(cola->primero->id - cola->ultimo->id < 10 ){
+			cola->ultimo->siguiente = nuevo;
+			cola->ultimo = nuevo;
+			int aux = cola->largo;
+			cola->largo = aux + 1;
+			fprintf(stderr, "Elemento agregado a la cola (%s, %d) largo: %d\n", cola->ultimo->mensaje, cola->ultimo->id, cola->largo);
+		} else {
+			perror("limite de la cola superado");
+		}
 	}
-
-	printf("Elemento agregado a la cola\n");
 
 	if(cola->ultimo->id == nuevo->id){
 		return TRUE;
@@ -80,14 +88,15 @@ Nodo *tomar(Cola *cola){
 
 		cola->primero = NULL;
 		cola->ultimo = NULL;
+		cola->largo = 0;
 		printf("Elemento tomado de una cola con un solo Elemento\n");
 		return salida;
 	} else {
 		salida = cola->primero;
-
 		cola->primero = salida->siguiente;
-
-		printf("Elemento tomado de una cola\n");
+		int aux = cola->largo;
+		cola->largo = aux - 1;
+		fprintf(stderr, "Elemento tomado de una cola: %d\n", cola->largo);
 		return salida;
 
 	}
