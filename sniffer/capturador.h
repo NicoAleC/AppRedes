@@ -1,0 +1,1 @@
+void informacion_paquete(const u_char *, struct pcap_pkthdr);
