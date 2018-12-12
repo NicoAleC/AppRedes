@@ -37,32 +37,17 @@ int main(int argc, char **argv)
 
     printf("reconociendo las direcciones ip y máscara subred\n");
     lookup_code = pcap_lookupnet(dev, &ip_raw, &mask_raw, errbuff);
-    printf("reconocidas las direcciones ip y máscara subred\n");
     
     if( lookup_code == -1){
         fprintf(stderr, "%s\n", errbuff);
         exit(EXIT_FAILURE);
     }
 
-    direccion.s_addr = ip_raw;
+    reconocer_direccion(direccion, ip_raw, ip);
+    printf("IP: %s\n", ip);
 
-    strcpy(ip, inet_ntoa(direccion));
-
-    if(ip == NULL){
-        printf("direccion ip no reconocida\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("%s\n", ip);
-
-    direccion.s_addr = mask_raw;
-
-    strcpy(mascara_de_subred, inet_ntoa(direccion));
-
-    if(mascara_de_subred == NULL){
-        printf("máscara de subred no reconocida\n");
-        exit(EXIT_FAILURE);
-    }
-    printf("%s\n", mascara_de_subred);
+    reconocer_direccion(direccion, mask_raw, mascara_de_subred);
+    printf("Máscara de subred: %s\n", mascara_de_subred);
 
     printf("definiendo handleloop\n");
     handleloop = pcap_open_live(dev, LENGTH_CAPTURE, 1, 10000, errbuff);
@@ -87,6 +72,17 @@ int main(int argc, char **argv)
 void informacion_paquete(const u_char *paquete, const struct pcap_pkthdr *cabecera_paquete){
     fprintf(stderr, "largo del paquete capturado: %d\n", cabecera_paquete->caplen);
     fprintf(stderr, "largo total del paquete: %d\n", cabecera_paquete->len);
+}
+
+void reconocer_direccion(struct in_addr direccion, bpf_u_int32 dir, char *stdir){
+    direccion.s_addr = dir;
+
+    strcpy(stdir, inet_ntoa(direccion));
+
+    if(stdir == NULL){
+        printf("direccion ip no reconocida\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void manejador_paquete(u_char * args, const struct pcap_pkthdr * cabecera_paquete, const u_char * cuerpo_paquete){
