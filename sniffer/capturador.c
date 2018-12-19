@@ -182,19 +182,53 @@ void imprimir_cabecera_tcp(const u_char * cuerpo_paquete){
     fprintf(stderr, "Puerto de origen: %u\n", ntohs(cabecera_tcp->source));
     fprintf(stderr, "Puerto de destino: %u\n", ntohs(cabecera_tcp->dest));
     fprintf(stderr, "Número de secuencia: %d\n", ntohl(cabecera_tcp->seq));
-    fprintf(stderr, "ACK: %d\n", ntohl(cabecera_tcp->ack_seq));
+    fprintf(stderr, "Número de secuencia de ACK: %d\n", ntohl(cabecera_tcp->ack_seq));
+    fprintf(stderr, "ACK flag %d\n", (unsigned int) cabecera_tcp->ack);
     fprintf(stderr, "Tamaño de la cabecera: %d\n", largo_cabecera_tcp);
     printf("----------------------------TCP----------------------\n");
 }
 
 void imprimir_cabecera_udp(const u_char * cuerpo_paquete){
+    u_short largo_cabecera_ip = 0;
+    struct iphdr *cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
+    largo_cabecera_ip = cabecera_ip->ihl * 4;
 
+    struct udphdr *cabecera_udp = (struct udphdr *) (cuerpo_paquete + largo_cabecera_ip + sizeof(struct ether_header));
+
+    int largo_cabecera_udp = sizeof(struct ether_header) + largo_cabecera_ip + sizeof(cabecera_udp);
+
+    printf("----------------------------UDP----------------------\n");
+    fprintf(stderr, "Puerto de origen: %u\n", ntohs(cabecera_udp->source));
+    fprintf(stderr, "Puerto de destino: %u\n", ntohs(cabecera_udp->dest));
+    fprintf(stderr, "Tamaño del paquete UDP: %d\n", ntohs(cabecera_udp->len));
+    printf("----------------------------UDP----------------------\n");
 }
 
 void imprimir_cabecera_icmp(const u_char * cuerpo_paquete){
+    u_short largo_cabecera_ip = 0;
+    struct iphdr *cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
+    largo_cabecera_ip = cabecera_ip->ihl * 4;
 
+    struct icmphdr *cabecera_icmp = (struct icmphdr *) (cuerpo_paquete + largo_cabecera_ip + sizeof(struct ether_header));
+
+    int largo_cabecera_icmp = sizeof(struct ether_header) + largo_cabecera_ip + sizeof (cabecera_icmp);
+
+    printf("----------------------------ICMP----------------------\n");
+    unsigned int tipo = (unsigned int) cabecera_icmp->type;
+    fprintf(stderr, "Tipo: %u\n", tipo);
+    if(tipo == 11){
+        printf("TTL expirado\n");
+    } else if (tipo == ICMP_ECHOREPLY){
+        printf("ICMP echo reply\n");
+    }
+    fprintf(stderr, "Código: %u\n", (unsigned int) cabecera_icmp->code);
+    //fprintf(stderr, "ID: %d\n", ntohs(cabecera_icmp->id));
+    //fprintf(stderr, "Secuencia: %s\n", ntohs(cabecera_icmp->sequence));
+    printf("----------------------------ICMP----------------------\n");
 }
 
 void imprimir_cabecera_igmp(const u_char * cuerpo_paquete){
-
+    printf("----------------------------IGMP----------------------\n");
+    printf("Paquete IGMP capturado\n");
+    printf("----------------------------IGMP----------------------\n");
 }
