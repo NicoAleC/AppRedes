@@ -3,12 +3,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <net/if_arp.h>
 #include <ctype.h>
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/icmp6.h>
+#include </usr/include/netinet/ip6.h>
 
 #include "capturador.h"
 
@@ -87,13 +90,18 @@ void reconocer_direccion(struct in_addr direccion, bpf_u_int32 dir, char *stdir)
 }
 
 void manejador_paquete(u_char * args, const struct pcap_pkthdr * cabecera_paquete, const u_char * cuerpo_paquete){
-    informacion_paquete(cuerpo_paquete, cabecera_paquete);
-    struct ether_header * cabecera_ethernet;
-    //imprimir_cabecera_ethernet(cabecera_ethernet);
+    //informacion_paquete(cuerpo_paquete, cabecera_paquete);
+    imprimir_cabecera_ethernet(cuerpo_paquete);
+}
 
-    cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
+void imprimir_cabecera_ethernet(const u_char *cuerpo_paquete){
 
+
+    struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short tipo = ntohs(cabecera_ethernet->ether_type);
+    //if(tipo == ETHERTYPE_ARP){
+    fprintf(stderr, "Mac destino: %s \n", ether_ntoa((struct ether_addr *)cabecera_ethernet->ether_dhost));
+    fprintf(stderr, "Mac origen: %s \n", ether_ntoa((struct ether_addr *)cabecera_ethernet->ether_shost));
 
     switch (tipo) {
         case ETHERTYPE_IP:
@@ -102,26 +110,17 @@ void manejador_paquete(u_char * args, const struct pcap_pkthdr * cabecera_paquet
             break;
         case ETHERTYPE_ARP:
             fprintf(stderr, "ARP: %x\n", tipo);
+            imprimir_cabecera_arp(cuerpo_paquete);
             break;
         case ETHERTYPE_IPV6:
             fprintf(stderr, "IPv6: %x\n", tipo);
+            imprimir_cabecera_ipv6(cuerpo_paquete);
             break;
         default:
             printf("error al analizar la capa de enlace\n");
-            exit(EXIT_FAILURE);
             break;
     } 
-}
-
-void imprimir_cabecera_ethernet(struct ether_header * cabecera_ethernet){
-    /*fprintf(stderr, "Mac destino: %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", cabecera_ethernet->ether_dhost[0], 
-        cabecera_ethernet->ether_dhost[1], cabecera_ethernet->ether_dhost[2], cabecera_ethernet->ether_dhost[3], 
-        cabecera_ethernet->ether_dhost[4], cabecera_ethernet->ether_dhost[5]);*/
-    fprintf(stderr, "mac destino: %hhn \n", cabecera_ethernet->ether_dhost);
-
-    /*fprintf(stderr, "Mac origen: %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", cabecera_ethernet->ether_shost[0], 
-        cabecera_ethernet->ether_shost[1], cabecera_ethernet->ether_shost[2], cabecera_ethernet->ether_shost[3], 
-        cabecera_ethernet->ether_shost[4], cabecera_ethernet->ether_shost[5]);*/
+    //}
 }
 
 void imprimir_cabecera_ip(const u_char* cuerpo_paquete){
@@ -139,40 +138,109 @@ void imprimir_cabecera_ip(const u_char* cuerpo_paquete){
     bzero(&destino, sizeof(destino));
     destino.s_addr = cabecera_ip->daddr;
 
-    printf("----------------------------IP----------------------\n");
-    fprintf(stderr, "version: %d\n", cabecera_ip->version);
-    fprintf(stderr, "tamaño de la cabecera ip: %d\n", largo_cabecera_ip);
-    fprintf(stderr, "protocolo encapsulado: %d\n", protocolo);
-    fprintf(stderr, "dirección de origen: %s\n", inet_ntoa(origen));
-    fprintf(stderr, "dirección de destino: %s\n", inet_ntoa(destino));
-    printf("----------------------------IP----------------------\n");
+    printf("----------------------------IPv4----------------------\n");
+    fprintf(stderr, "Version: %d\n", cabecera_ip->version);
+    fprintf(stderr, "Tamaño de la cabecera ip: %d\n", largo_cabecera_ip);
+    fprintf(stderr, "Protocolo encapsulado: %d\n", protocolo);
+    fprintf(stderr, "Dirección de origen: %s\n", inet_ntoa(origen));
+    fprintf(stderr, "Dirección de destino: %s\n", inet_ntoa(destino));
+    printf("----------------------------IPv4----------------------\n");
 
     switch (protocolo){
-        case TCP_P:
+        case IPPROTO_TCP:
             imprimir_cabecera_tcp(cuerpo_paquete);
             break;
-        case UPD_P:
+        case IPPROTO_UDP:
             imprimir_cabecera_udp(cuerpo_paquete);
             break;
-        case ICMP_P:
+        case IPPROTO_ICMP:
             imprimir_cabecera_icmp(cuerpo_paquete);
             break;
-        case IGMP_P:
+        case IPPROTO_IGMP:
             imprimir_cabecera_igmp(cuerpo_paquete);
             break;
         default:
             printf("error al analizar la capa de red\n");
-            exit(EXIT_FAILURE);
             break;
     }
 
 }
 
+void imprimir_cabecera_ipv6(const u_char * cuerpo_paquete){
+    struct ip6_hdr *cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
+    char origen[60];
+    char destino[60];
+
+    bzero(origen, sizeof(origen));
+    inet_ntop(AF_INET6, &(cabecera_ipv6->ip6_src), origen, INET6_ADDRSTRLEN);
+
+    bzero(destino, sizeof(destino));
+    inet_ntop(AF_INET6, &(cabecera_ipv6->ip6_dst), destino, INET6_ADDRSTRLEN);
+
+    int siguiente_cabecera = cabecera_ipv6->ip6_nxt;
+
+    printf("----------------------------IPv6----------------------\n");
+    fprintf(stderr, "Versión: %d\n", cabecera_ipv6->ip6_vfc);
+    fprintf(stderr, "Dirección de origen: %s\n", origen);
+    fprintf(stderr, "Dirección de destino: %s\n", destino);
+    fprintf(stderr, "Siguiente cabecera: %d\n", siguiente_cabecera);
+    printf("----------------------------IPv6----------------------\n");
+    switch (siguiente_cabecera){
+        case IPPROTO_TCP:
+            imprimir_cabecera_tcp(cuerpo_paquete);
+            break;
+        case IPPROTO_UDP:
+            imprimir_cabecera_udp(cuerpo_paquete);
+        case IPPROTO_ICMPV6:
+            imprimir_cabecera_icmp6(cuerpo_paquete);
+            break;
+        default:
+            printf("error al analizar la capa de red \n");
+            break;
+    }
+}
+
+void imprimir_cabecera_arp(const u_char * cuerpo_paquete){
+
+    struct arphdr * cabecera_arp = (struct arphdr *) cuerpo_paquete;
+    u_short tipo = cabecera_arp->ar_op;
+
+    printf("----------------------------ARP----------------------\n");
+    fprintf(stderr, "Hardware Type : %u\n", cabecera_arp->ar_hrd);
+    fprintf(stderr, "Hardware Length: %u\n", cabecera_arp->ar_hln);
+    fprintf(stderr, "Protocol Type : %u\n", cabecera_arp->ar_pro);
+    fprintf(stderr, "Protocol Length: %u\n", cabecera_arp->ar_pln);
+    switch (tipo){
+        case ARPOP_REQUEST:
+            fprintf(stderr, "ARP Request: %u\n", tipo);
+            break;
+        case ARPOP_REPLY:
+            fprintf(stderr, "ARP Reply: %u\n", tipo);
+            break;
+        default:
+            fprintf(stderr, "ARPOP (%u)\n", tipo);
+            break;
+    }    
+    printf("----------------------------ARP----------------------\n");
+}
+
 void imprimir_cabecera_tcp(const u_char * cuerpo_paquete){
 
+    struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short largo_cabecera_ip = 0;
-    struct iphdr *cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
-    largo_cabecera_ip = cabecera_ip->ihl * 4;
+    struct iphdr *cabecera_ip;
+    struct ip6_hdr *cabecera_ipv6;
+
+    switch (cabecera_ethernet->ether_type){
+        case ETHERTYPE_IP:  
+            cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
+            largo_cabecera_ip = cabecera_ip->ihl * 4;
+            break;
+        case ETHERTYPE_IPV6:
+            cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
+            largo_cabecera_ip =  cabecera_ipv6->ip6_nxt;
+            break;
+    }
 
     struct tcphdr  * cabecera_tcp = (struct tcphdr *) (cuerpo_paquete + largo_cabecera_ip + sizeof(struct ether_header));
 
@@ -189,9 +257,21 @@ void imprimir_cabecera_tcp(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_udp(const u_char * cuerpo_paquete){
+    struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short largo_cabecera_ip = 0;
-    struct iphdr *cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
-    largo_cabecera_ip = cabecera_ip->ihl * 4;
+    struct iphdr *cabecera_ip;
+    struct ip6_hdr *cabecera_ipv6;
+
+    switch (cabecera_ethernet->ether_type){
+        case ETHERTYPE_IP:  
+            cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
+            largo_cabecera_ip = cabecera_ip->ihl * 4;
+            break;
+        case ETHERTYPE_IPV6:
+            cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
+            largo_cabecera_ip =  cabecera_ipv6->ip6_nxt;
+            break;
+    }
 
     struct udphdr *cabecera_udp = (struct udphdr *) (cuerpo_paquete + largo_cabecera_ip + sizeof(struct ether_header));
 
@@ -225,6 +305,35 @@ void imprimir_cabecera_icmp(const u_char * cuerpo_paquete){
     //fprintf(stderr, "ID: %d\n", ntohs(cabecera_icmp->id));
     //fprintf(stderr, "Secuencia: %s\n", ntohs(cabecera_icmp->sequence));
     printf("----------------------------ICMP----------------------\n");
+}
+
+void imprimir_cabecera_icmp6(const u_char * cuerpo_paquete){
+    struct ip6_hdr *cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
+
+    struct icmp6_hdr *cabecera_icmp6 = (struct icmp6_hdr *) (cuerpo_paquete + cabecera_ipv6->ip6_nxt + sizeof(struct ether_header));
+    unsigned int tipo = (unsigned int) cabecera_icmp6->icmp6_type;
+
+    printf("----------------------------ICMP6----------------------\n");
+    fprintf(stderr, "Código: %u\n", cabecera_icmp6->icmp6_code);
+    switch (tipo){
+        case ICMP6_DST_UNREACH:
+            fprintf(stderr, "Destino inaccesible: %u\n", tipo);
+            break;
+        case ICMP6_PACKET_TOO_BIG:
+            fprintf(stderr, "Paquete demasiado grande: %u\n", tipo);
+            break;
+        case ICMP6_TIME_EXCEEDED:
+            fprintf(stderr, "Tiempo excedido: %u\n", tipo);
+            break;
+        case ICMP6_PARAM_PROB:
+            fprintf(stderr, "Problema del parametro: %u\n", tipo);
+            break;
+        default:
+            fprintf(stderr, "Otros tipos de ICMP6 (%u)\n", tipo);
+            break;
+    }
+    printf("----------------------------ICMP6----------------------\n");
+
 }
 
 void imprimir_cabecera_igmp(const u_char * cuerpo_paquete){
