@@ -112,8 +112,9 @@ void manejador_paquete(u_char * args, const struct pcap_pkthdr * cabecera_paquet
     printf("\nCantidades de paquetes o tramas capturadas.......................\n");
     fprintf(stderr, "Ethernet: %u\n", c_eth);
     fprintf(stderr, "IPv4: %d, IPv6: %u, ARP: %u\n", c_ipv4, c_ipv6, c_arp);
+    fprintf(stderr, "Otros paquetes en la capa de red: %u\n", c_eth - (c_ipv6 + c_ipv4 + c_arp));
     fprintf(stderr, "TCP: %u, UDP: %u, ICMP: %u, IGMP: %u, ICMP6: %u\n", c_tcp, c_udp, c_icmp, c_igmp, c_icmp6);
-    fprintf(stderr, "Otros paquetes: %u\n", c_eth - (c_ipv6 + c_ipv4 + c_arp));
+    fprintf(stderr, "Otros paquetes en la capa de transporte: %u\n", (c_ipv4 + c_ipv6) - (c_tcp + c_udp + c_icmp + c_igmp + c_icmp6));
     printf("\nFin de las cantidades............................................\n");
 }
 
