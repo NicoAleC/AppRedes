@@ -15,6 +15,9 @@
 
 #include "capturador.h"
 
+//Variables globales agregadas con motivo de análicis del tráfico de red
+u_int c_eth, c_ipv4, c_ipv6, c_arp , c_tcp, c_udp, c_icmp, c_igmp, c_icmp6; 
+
 int main(int argc, char **argv)
 {
     char errbuff[PCAP_ERRBUF_SIZE];
@@ -67,15 +70,29 @@ int main(int argc, char **argv)
         perror(errbuff);
         exit(EXIT_FAILURE);
     }
+
+    limpiar_cantidades();
     
     fprintf(stderr, "Empezando a capturar paquetes %s", dev);
     pcap_loop(handleloop, 0, manejador_paquete, NULL);
     
 }
 
+void limpiar_cantidades(){
+    c_eth = 0;
+    c_ipv6 = 0;
+    c_ipv4 = 0;
+    c_arp = 0;
+    c_tcp = 0;
+    c_udp = 0;
+    c_icmp = 0;
+    c_igmp = 0;
+    c_icmp6 = 0;
+}
+
 void informacion_paquete(const u_char *paquete, const struct pcap_pkthdr *cabecera_paquete){
-    fprintf(stderr, "largo del paquete capturado: %d\n", cabecera_paquete->caplen);
-    fprintf(stderr, "largo total del paquete: %d\n", cabecera_paquete->len);
+    fprintf(stderr, "\n\nLargo del paquete capturado: %d\n", cabecera_paquete->caplen);
+    fprintf(stderr, "Largo total del paquete: %d\n", cabecera_paquete->len);
 }
 
 void reconocer_direccion(struct in_addr direccion, bpf_u_int32 dir, char *stdir){
@@ -90,12 +107,19 @@ void reconocer_direccion(struct in_addr direccion, bpf_u_int32 dir, char *stdir)
 }
 
 void manejador_paquete(u_char * args, const struct pcap_pkthdr * cabecera_paquete, const u_char * cuerpo_paquete){
-    //informacion_paquete(cuerpo_paquete, cabecera_paquete);
+    informacion_paquete(cuerpo_paquete, cabecera_paquete);
     imprimir_cabecera_ethernet(cuerpo_paquete);
+    printf("\nCantidades de paquetes o tramas capturadas.......................\n");
+    fprintf(stderr, "Ethernet: %u\n", c_eth);
+    fprintf(stderr, "IPv4: %d, IPv6: %u, ARP: %u\n", c_ipv4, c_ipv6, c_arp);
+    fprintf(stderr, "TCP: %u, UDP: %u, ICMP: %u, IGMP: %u, ICMP6: %u\n", c_tcp, c_udp, c_icmp, c_igmp, c_icmp6);
+    fprintf(stderr, "Otros paquetes: %u\n", c_eth - (c_ipv6 + c_ipv4 + c_arp));
+    printf("\nFin de las cantidades............................................\n");
 }
 
 void imprimir_cabecera_ethernet(const u_char *cuerpo_paquete){
 
+    c_eth++;
 
     struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short tipo = ntohs(cabecera_ethernet->ether_type);
@@ -117,13 +141,16 @@ void imprimir_cabecera_ethernet(const u_char *cuerpo_paquete){
             imprimir_cabecera_ipv6(cuerpo_paquete);
             break;
         default:
-            printf("error al analizar la capa de enlace\n");
+            fprintf(stderr, "Otro tipo de trama ethernet: %x\n", tipo);
             break;
     } 
     //}
 }
 
 void imprimir_cabecera_ip(const u_char* cuerpo_paquete){
+    
+    c_ipv4++;
+
     struct in_addr destino;
     struct in_addr origen;
 
@@ -167,6 +194,9 @@ void imprimir_cabecera_ip(const u_char* cuerpo_paquete){
 }
 
 void imprimir_cabecera_ipv6(const u_char * cuerpo_paquete){
+    
+    c_ipv6++;
+
     struct ip6_hdr *cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
     char origen[60];
     char destino[60];
@@ -202,6 +232,8 @@ void imprimir_cabecera_ipv6(const u_char * cuerpo_paquete){
 
 void imprimir_cabecera_arp(const u_char * cuerpo_paquete){
 
+    c_arp++;
+
     struct arphdr * cabecera_arp = (struct arphdr *) cuerpo_paquete;
     u_short tipo = cabecera_arp->ar_op;
 
@@ -225,6 +257,8 @@ void imprimir_cabecera_arp(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_tcp(const u_char * cuerpo_paquete){
+
+    c_tcp++;
 
     struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short largo_cabecera_ip = 0;
@@ -257,6 +291,9 @@ void imprimir_cabecera_tcp(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_udp(const u_char * cuerpo_paquete){
+    
+    c_udp++;
+
     struct ether_header * cabecera_ethernet = (struct ether_header *) cuerpo_paquete;
     u_short largo_cabecera_ip = 0;
     struct iphdr *cabecera_ip;
@@ -285,6 +322,9 @@ void imprimir_cabecera_udp(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_icmp(const u_char * cuerpo_paquete){
+    
+    c_icmp++;
+
     u_short largo_cabecera_ip = 0;
     struct iphdr *cabecera_ip = (struct iphdr *) (cuerpo_paquete + sizeof(struct ether_header));
     largo_cabecera_ip = cabecera_ip->ihl * 4;
@@ -308,6 +348,9 @@ void imprimir_cabecera_icmp(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_icmp6(const u_char * cuerpo_paquete){
+    
+    c_icmp6++;
+
     struct ip6_hdr *cabecera_ipv6 = (struct ip6_hdr *) (cuerpo_paquete + sizeof(struct ether_header));
 
     struct icmp6_hdr *cabecera_icmp6 = (struct icmp6_hdr *) (cuerpo_paquete + cabecera_ipv6->ip6_nxt + sizeof(struct ether_header));
@@ -337,6 +380,9 @@ void imprimir_cabecera_icmp6(const u_char * cuerpo_paquete){
 }
 
 void imprimir_cabecera_igmp(const u_char * cuerpo_paquete){
+    
+    c_igmp++;
+
     printf("----------------------------IGMP----------------------\n");
     printf("Paquete IGMP capturado\n");
     printf("----------------------------IGMP----------------------\n");

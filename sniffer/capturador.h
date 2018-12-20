@@ -1,5 +1,6 @@
 #define LENGTH_CAPTURE 20000
 
+void limpiar_cantidades();
 
 void informacion_paquete(const u_char *, const struct pcap_pkthdr*);
 
